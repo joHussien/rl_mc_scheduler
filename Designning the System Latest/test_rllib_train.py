@@ -158,9 +158,10 @@ if __name__ == "__main__":
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
     register_env("filtered_degraded_larger_steps", lambda env_config: MCEnv())
-
-    tune.run(ApexTrainer, checkpoint_freq=50, stop={"training_iteration": 500},  config={"env": "filtered_degraded_larger_steps", "num_workers": 7, "num_cpus_per_worker": 1,
-                              "num_gpus": 0 , "horizon": 1, "gamma":1,
+    hyper_parameters={"env": "filtered_degraded_larger_steps", "num_workers": 7, "num_cpus_per_worker": 1,
+                              "num_gpus": 0 , "horizon": 1, "gamma":tune.grid_search([0.1,0.5,0.9,1]),
+                              "prioritized_replay": tune.grid_search(['false','true']), "timesteps_per_iteration":tune.grid_search([100,500,1000])}
+    tune.run(SACTrainer, checkpoint_freq=50, stop={"training_iteration": 500},  config=hyper_parameters)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 
                                                                                          #})
@@ -171,7 +172,7 @@ if __name__ == "__main__":
                   #"dueling": False, #"prioritized_replay": False}
           #        "hiddens": [],
            #       "dueling": False,
-                  })
+           #        })
     #"prioritized_replay": False
     #                           "framework": "torch",
 
