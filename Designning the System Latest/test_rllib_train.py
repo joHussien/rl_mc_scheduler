@@ -157,7 +157,7 @@ def get_opt():
 
 #arguments =get_opt()
 if __name__ == "__main__":
-    ray.init()
+    ray.init(object_store_memory=10**9)
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
     register_env("not_filtered_not_degraded_offline", lambda env_config: MCEnv())
@@ -166,11 +166,11 @@ if __name__ == "__main__":
                                 # "horizon": 1,"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
                                 # "replay_proportion": tune.uniform(0,1),"replay_buffer_num_slots":1
                                 # "gamma":tune.grid_search([0.1,0.5,0.9,1]),
-                              # "prioritized_replay": 'true'
-                      # "timesteps_per_iteration":tune.grid_search([100,500,1000])
+                                 "prioritized_replay": True,
+                       #"timesteps_per_iteration":15000,
                       }
-    bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
-    tune.run(ApexTrainer, checkpoint_freq=50, stop={"training_iteration": 500},  config=hyper_parameters,search_alg=bayesopt)
+   # bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
+    tune.run(SACTrainer, checkpoint_freq=50, stop={"training_iteration": 500},  config=hyper_parameters)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 
                                                                                          #})
