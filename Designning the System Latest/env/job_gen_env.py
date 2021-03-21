@@ -86,13 +86,15 @@ class MCEnv(gym.Env):
         time = max(self.time, self.workload[action, 0])
 
         if time >= self.degradation_schedule:
-            self.speed = self.degradation_speed
+            # self.speed = self.degradation_speed
+            self.speed = 1
             time += self.workload[action, 2] / self.speed
         elif self.workload[action, 2] + time < self.degradation_schedule:
             time += self.workload[action, 2]
         else:
             time_in_norm = self.degradation_schedule-time
-            self.speed = self.degradation_speed
+            # self.speed = self.degradation_speed
+            self.speed = 1
             time_in_deg = (self.workload[action][2]-time_in_norm)/self.speed
             time += time_in_norm + time_in_deg
         # double check, as in case of degradation, time will not increment properly which might lead to the
