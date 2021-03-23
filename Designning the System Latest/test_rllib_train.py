@@ -171,7 +171,8 @@ if __name__ == "__main__":
     register_env("filtered_degraded_offline", lambda env_config: MCEnv())
     hyper_parameters={"env": "filtered_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
                              "num_gpus": 0 , 
-                              "lambda": tune.uniform(0,1),"sgd_minibatch_size":512,
+                              "lambda": tune.uniform(0,1),
+				"sgd_minibatch_size":1024,
                                 # "horizon": 1,"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
                                 # "replay_proportion": tune.uniform(0,1),"replay_buffer_num_slots":1
                                 # "gamma":tune.grid_search([0.1,0.5,0.9,1]),
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     #bohb = HyperBandForBOHB( time_attr="training_iteration",metric="episode_reward_mean",mode="max")
     tune.run(PPOTrainer, checkpoint_freq=50, stop={ 
                                                     #"episode_reward_mean":6,
-                                                    "training_iteration": 500
+                                                    "training_iteration": 1500
                                                                                 },  config=hyper_parameters,search_alg=algo)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 
