@@ -16,10 +16,10 @@ import numpy as np
 import gym 
 from gym.utils import seeding
 from gym.spaces import Box, MultiBinary, Discrete, Dict
-from job_generator import create_workload
+from env.job_generator import create_workload
 from scipy.stats import loguniform
 from gym.spaces.utils import flatten, flatten_space
-from Filtering_EDF import filtering_workload
+from env.Filtering_EDF import filtering_workload
 from gym import spaces
 #Modifications needed to add preemption to the system
 #1. We will apply preemption currently to the offline environement
@@ -79,8 +79,8 @@ class MCEnv(gym.Env):
         # RP =  procesing - update_qt for now update_qt=0
         self.update_qt = 0.0
         self.workload[:,8]=self.workload[:,2] - self.update_qt
-        print("Init Workload: \n ")
-        print(self.workload)
+        #print("Init Workload: \n ")
+        #print(self.workload)
         self.workload[:, 4][self.time >= self.workload[:, 0]] = 1
         self.workload[:, 5][self.time + self.workload[:, 8]/self.speed > self.workload[:, 1]] = 1 #jobs that can't be done anyways
          # self.workload[:, 7][self.time >= self.workload[:, 0]] = 1
@@ -104,8 +104,8 @@ class MCEnv(gym.Env):
         return [seed]
 
     def step(self, action):
-        print("Current workload and time before stepping: ", self.time, "self.speed,",self.speed,"\n", self.workload)
-        print("action taken: ",action)
+        #print("Current workload and time before stepping: ", self.time, "self.speed,",self.speed,"\n", self.workload)
+        #print("action taken: ",action)
 
         #TODO : Very Important I have a current problem, now I am forcing the system to preempt always by always subtracting 1
         #define step logic
@@ -151,15 +151,15 @@ class MCEnv(gym.Env):
         # if self.workload[action,7]==0:
         #ToDo this needs to be checked
         time = max(self.time, self.workload[action[0], 0])
-        print("Before update time: ",time)
+        #print("Before update time: ",time)
         # else:
         #     #As we preempted this job before then for sure self.time must be equal than the release
         #     time=self.time
         #edit here
         # ToDO(Youssef): see here
         if time >= self.degradation_schedule:
-            # self.speed = 1.0 #no degradation test
-            self.speed = self.degradation_speed
+            self.speed = 1.0 #no degradation test
+            #self.speed = self.degradation_speed
             # Think aboutttttttttttttttt thissssssssssssss this what dr nouri was talking about, should I update time
             # with only one time unit
             # time += self.workload[action, 2] / self.speed
@@ -186,13 +186,13 @@ class MCEnv(gym.Env):
             time += time_in_norm + time_in_deg
         # double check, as in case of degradation, time will not increment properly which might lead to the
         # starvation a job unexpectedly
-        print("After time: ",time)
+        #print("After time: ",time)
         if time <= self.workload[action[0], 1]:
             self.time = time
             #ToDo Think here about jobs with P < 1.0
-            print("Update Quantity",self.update_qt)
+            #print("Update Quantity",self.update_qt)
             self.workload[action[0], 8] = self.workload[action[0], 8] - self.update_qt
-            print("After Update", self.workload)
+            #print("After Update", self.workload)
             if(self.workload[action[0],8]<=0 and self.workload[action[0],7]==1):
                 self.workload[action[0], 6] = 1
             self.workload[:, 4][self.time >= self.workload[:, 0]] = 1
@@ -201,9 +201,9 @@ class MCEnv(gym.Env):
             will_starve_condition = ((self.time + self.workload[:, 8])/self.speed > self.workload[:, 1])\
                                     *(1-self.workload[:, 6]).astype(bool)
             self.workload[:, 5][will_starve_condition] = 1
-            print(self.workload)
+            #print(self.workload)
             done = self._done()
-            print(done)
+            #print(done)
             # reward = -np.sum((self.workload[:, 5] - prev_workload[:, 5])*self.reward_weights)
             if done and self.workload[self.workload[:, 3].astype(bool), 6].all():
                 reward += np.sum(self.workload[:, 6])
@@ -742,30 +742,5 @@ class MCOEnv(gym.Env):
     def final(self):
             if self._done():
                 print("Final Workload after done:",self.workload)
-#
-env = MCEnv()
 
-# observation=env.reset()
-# done = env._done()
-done=False
-state=0
-total_reward=0
-myspace = spaces.Tuple((spaces.Discrete(5), spaces.Box(low=0, high=np.inf, shape=(1,))))
-while not done:
-# for i in range(5):
-   state=state+1
-
-   action = myspace.sample()
-   print("Action: ", action)
-   observation, reward, done, empty = env.step(action)
-   total_reward=total_reward+ reward
-   #print(observation)
-   if done:
-
-       #env.final()
-       print("Total Reward: %d",total_reward)
-       break
-
-print("Finished this Eposide after ", state, " States")
-print("Total Reward: %d", total_reward)
 # print("hello")
