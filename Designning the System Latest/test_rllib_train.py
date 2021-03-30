@@ -1,6 +1,6 @@
 import gym, ray
 #from env.job_gen_env import MCOEnv, MCEnv
-from env.job_gen_env import MCEnv,MCVBEnv,MCOEnv
+from env.job_gen_env_Preemption import MCEnv,MCVBEnv,MCOEnv
 
 import argparse
 import time
@@ -9,9 +9,10 @@ from ray import tune
 # from ray.tune.logger import LoggerCallback
 from ray.rllib.agents.impala.impala import ImpalaTrainer, DEFAULT_CONFIG
 from ray.tune.suggest.bayesopt import BayesOptSearch
-
+from ray.rllib.agents.pg.pg import PGTrainer
 from ray.rllib.agents.sac.sac import SACTrainer
 from ray.rllib.agents.dqn import ApexTrainer, DQNTrainer
+from ray.rllib.agents.ppo.ppo import PPOTrainer, DEFAULT_CONFIG
 from ray.tune.registry import register_env
 
 from gym.spaces import Box
@@ -158,19 +159,19 @@ def get_opt():
 #arguments =get_opt()
 if __name__ == "__main__":
     ray.init(object_store_memory=10**9)
-    ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
+    # ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
     register_env("not_filtered_not_degraded_offline", lambda env_config: MCEnv())
-    hyper_parameters={"env": "not_filtered_not_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
+    hyper_parameters={"env": "not_filtered_not_degraded_offline", "num_workers": 5, "num_cpus_per_worker": 1,
                               "num_gpus": 0 ,
                                 # "horizon": 1,"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
                                 # "replay_proportion": tune.uniform(0,1),"replay_buffer_num_slots":1
                                 # "gamma":tune.grid_search([0.1,0.5,0.9,1]),
-                                 "prioritized_replay": True,
+                                #  "prioritized_replay": True,
                        #"timesteps_per_iteration":15000,
                       }
    # bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
-    tune.run(SACTrainer, checkpoint_freq=50, stop={"training_iteration": 500},  config=hyper_parameters)
+    tune.run(PPOTrainer, checkpoint_freq=200, stop={"training_iteration": 1000},  config=hyper_parameters)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 
                                                                                          #})
