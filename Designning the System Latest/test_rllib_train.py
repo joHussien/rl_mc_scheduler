@@ -1,6 +1,6 @@
 import gym, ray
 #from env.job_gen_env import MCOEnv, MCEnv
-from env.job_gen_env_Preemption import MCEnv,MCVBEnv,MCOEnv
+from env.job_gen_env_filtered import MCEnv,MCVBEnv,MCOEnv
 
 import argparse
 import time
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     ray.init()
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
-    register_env("PREEMPTION_filtered_not_degraded_offline", lambda env_config: MCEnv())
-    hyper_parameters={"env": "PREEMPTION_filtered_not_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
+    register_env("filtered_degraded_offline", lambda env_config: MCEnv())
+    hyper_parameters={"env": "filtered_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
                              "num_gpus": 0 , 
                               "lambda": tune.uniform(0,1),
 				"sgd_minibatch_size":1024,
@@ -182,9 +182,9 @@ if __name__ == "__main__":
    # bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
     algo = BayesOptSearch( metric="episode_reward_mean", mode="max")
     #bohb = HyperBandForBOHB( time_attr="training_iteration",metric="episode_reward_mean",mode="max")
-    tune.run(PPOTrainer, checkpoint_freq=200, stop={ 
-                                                    "episode_reward_mean":7,
-                                                     "training_iteration": 2000
+    tune.run(PPOTrainer, checkpoint_freq=50, stop={ 
+                                                    #"episode_reward_mean":6,
+                                                    "training_iteration": 1500
                                                                                 },  config=hyper_parameters,search_alg=algo)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 

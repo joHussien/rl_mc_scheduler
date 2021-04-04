@@ -51,7 +51,11 @@ class MCEnv(gym.Env):
         #TODO: handle cases of multiple switches between degradation and normal execution
         self.seed()
         self.degradation_schedule = np.random.uniform(high=np.sum(workload[:, 2]))
+
+        self.degradation_speed = np.random.uniform(low=self.total_load) #np.around(loguniform.rvs(self.total_load, 1e0), decimals=2)
+
         self.degradation_speed =np.random.uniform(low=self.total_load)  #np.around(loguniform.rvs(self.total_load, 1e0), decimals=2)
+
         self.action_mask = np.ones(self.job_num)
         #self.action_assignments = self.workload[:, :4]
         #thetas = np.arange(0, 360, 360 / self.job_num)[..., None]

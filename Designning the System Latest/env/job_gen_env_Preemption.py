@@ -15,7 +15,11 @@ Created on Wed Jun 17 21:26:05 2020
 import numpy as np
 import gym 
 from gym.utils import seeding
+<<<<<<< HEAD
 from gym.spaces import Box, MultiBinary, Discrete, Dict
+=======
+from gym.spaces import Tuple,Box, MultiBinary, Discrete, Dict
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
 from env.job_generator import create_workload
 from scipy.stats import loguniform
 from gym.spaces.utils import flatten, flatten_space
@@ -34,10 +38,10 @@ from gym import spaces
     # if preempted a low job give a reward
 # Experiment with these rewarding values
 class MCEnv(gym.Env):
-    def __init__(self, env_config= {'job_num': 5, 'total_load': 1, 'lo_per': 0.3, 'job_density': 4}):
+    def __init__(self, env_config= {'job_num': 5, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
         #add here description of each parameter
         self.time = 0
-
+        self.time=np.float32(self.time)
         #Here should filter the workload and pass the size of the filtered workload to the self.job_num
 
         self.job_num = env_config['job_num']
@@ -52,8 +56,8 @@ class MCEnv(gym.Env):
         # print(self.job_num)
 
         workload_filtered= filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
-        workload[:workload_filtered.size//4, :4]=workload_filtered
-        workload[workload_filtered.size//4:, 6]=1
+        workload[:workload_filtered.size//4, :4]= workload_filtered
+        workload[workload_filtered.size//4:, 6]= 1
         # print("Final Filtered-Scheduble instance using EDF on 1-speed: ")
         # print(workload)
         #hence the remaingin jobs in the initial workload will be filled with zeros
@@ -63,24 +67,31 @@ class MCEnv(gym.Env):
 
         # self.action_space = Discrete(self.job_num)
         #ToDo() Is the box upper boundary is 1 or what
-        self.action_space = spaces.Tuple(( spaces.Discrete(self.job_num), spaces.Box(low=0, high=np.inf, shape=(1,))))
+        # self.action_space = Tuple(Discrete(self.job_num),Box(low=-np.inf, high=np.inf, shape=(1,)))
+        self.action_space = Tuple((Discrete(self.job_num), Box(low=-np.inf, high=np.inf, shape=(1,),dtype=np.float32)))
         self.observation_space_dict = Dict({
             # 'action_mask': Box(0, 1, shape=(self.job_num,)),
             # 'avail_actions': Box(-np.inf, np.inf, shape=(self.job_num, 4)),
             # 'MCenv': Dict({
-               'RDP_jobs': Box(low=0, high=np.inf, shape=(self.job_num, 3)),
-               'CRSEC_jobs': MultiBinary(self.job_num * 5),
-                'RP_jobs': Box(low=0,high=np.inf, shape=(self.job_num, 1)),
-               'Processor': Box(low=np.array([0., 0.]), high=np.array([1, np.inf])),
+               'RDP_jobs': Box(low=-np.inf, high=np.inf, shape=(self.job_num, 3),dtype=np.float32),
+               'CRSEC_jobs': MultiBinary(self.job_num * 5,dtype=np.float32),
+                'RP_jobs': Box(low=-np.inf,high=np.inf, shape=(self.job_num, 1 ),dtype=np.float32),
+               'Processor': Box(low=np.array([-np.inf, -np.inf]), high=np.array([1, np.inf]),dtype=np.float32),
             })
         # })
+
         self.observation_space = flatten_space(self.observation_space_dict)
         # ToDo(Youssef): added the RP column logic
         # RP =  procesing - update_qt for now update_qt=0
         self.update_qt = 0.0
         self.workload[:,8]=self.workload[:,2] - self.update_qt
+<<<<<<< HEAD
         #print("Init Workload: \n ")
         #print(self.workload)
+=======
+        # print("Init Workload: \n ")
+        # print(self.workload)
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
         self.workload[:, 4][self.time >= self.workload[:, 0]] = 1
         self.workload[:, 5][self.time + self.workload[:, 8]/self.speed > self.workload[:, 1]] = 1 #jobs that can't be done anyways
          # self.workload[:, 7][self.time >= self.workload[:, 0]] = 1
@@ -88,6 +99,7 @@ class MCEnv(gym.Env):
         self.seed()
         self.degradation_schedule = np.random.uniform(high=np.sum(workload[:, 2]))
         self.degradation_speed = np.around(loguniform.rvs(self.total_load, 1e0), decimals=2) #np.random.uniform(low=self.total_load)
+        self.degradation_speed = np.float32(self.degradation_schedule)
         #ToDo this need to be edited
         self.action_mask = np.ones(self.job_num)
         #self.action_assignments = self.workload[:, :4]
@@ -99,13 +111,20 @@ class MCEnv(gym.Env):
         #self.action_assignments[self.action_mask.astype(bool)] = self.thetas[self.action_mask.astype(bool)]
         self._update_available()
 
+
+
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
     def step(self, action):
+<<<<<<< HEAD
         #print("Current workload and time before stepping: ", self.time, "self.speed,",self.speed,"\n", self.workload)
         #print("action taken: ",action)
+=======
+        # print("Current workload and time before stepping: ", self.time, "self.speed,",self.speed,"\n", self.workload)
+        # print("action taken: ",action)
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
 
         #TODO : Very Important I have a current problem, now I am forcing the system to preempt always by always subtracting 1
         #define step logic
@@ -132,7 +151,7 @@ class MCEnv(gym.Env):
         # print("Reached here")
         #label the job as chosen if not chosen before
         self.update_qt = action[1][0]
-
+        # TODO() This needs pt be revisited does it label it as preempted truly ?
         if (self.workload[action[0],7]==0):
             #label this job as preempted
             self.workload[action[0], 7]=1
@@ -151,15 +170,24 @@ class MCEnv(gym.Env):
         # if self.workload[action,7]==0:
         #ToDo this needs to be checked
         time = max(self.time, self.workload[action[0], 0])
+<<<<<<< HEAD
         #print("Before update time: ",time)
+=======
+        # print("Before update time: ",time)
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
         # else:
         #     #As we preempted this job before then for sure self.time must be equal than the release
         #     time=self.time
         #edit here
         # ToDO(Youssef): see here
         if time >= self.degradation_schedule:
+<<<<<<< HEAD
             self.speed = 1.0 #no degradation test
             #self.speed = self.degradation_speed
+=======
+            self.speed = 1 #no degradation test
+            # self.speed = self.degradation_speed
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
             # Think aboutttttttttttttttt thissssssssssssss this what dr nouri was talking about, should I update time
             # with only one time unit
             # time += self.workload[action, 2] / self.speed
@@ -186,6 +214,7 @@ class MCEnv(gym.Env):
             time += time_in_norm + time_in_deg
         # double check, as in case of degradation, time will not increment properly which might lead to the
         # starvation a job unexpectedly
+<<<<<<< HEAD
         #print("After time: ",time)
         if time <= self.workload[action[0], 1]:
             self.time = time
@@ -193,6 +222,15 @@ class MCEnv(gym.Env):
             #print("Update Quantity",self.update_qt)
             self.workload[action[0], 8] = self.workload[action[0], 8] - self.update_qt
             #print("After Update", self.workload)
+=======
+        # print("After time: ",time)
+        if time <= self.workload[action[0], 1]:
+            self.time = time
+            #ToDo Think here about jobs with P < 1.0
+            # print("Update Quantity",self.update_qt)
+            self.workload[action[0], 8] = self.workload[action[0], 8] - self.update_qt
+            # print("After Update", self.workload)
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
             if(self.workload[action[0],8]<=0 and self.workload[action[0],7]==1):
                 self.workload[action[0], 6] = 1
             self.workload[:, 4][self.time >= self.workload[:, 0]] = 1
@@ -201,14 +239,22 @@ class MCEnv(gym.Env):
             will_starve_condition = ((self.time + self.workload[:, 8])/self.speed > self.workload[:, 1])\
                                     *(1-self.workload[:, 6]).astype(bool)
             self.workload[:, 5][will_starve_condition] = 1
+<<<<<<< HEAD
             #print(self.workload)
             done = self._done()
             #print(done)
+=======
+            # print(self.workload)
+            done = self._done()
+            # print(done)
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
             # reward = -np.sum((self.workload[:, 5] - prev_workload[:, 5])*self.reward_weights)
             if done and self.workload[self.workload[:, 3].astype(bool), 6].all():
                 reward += np.sum(self.workload[:, 6])
+        # self.time = np.float32(self.time)
         obs = self._get_obs()
         done = self._done()
+
         return obs, reward, done, {}
 
     def _update_available(self):
@@ -219,8 +265,14 @@ class MCEnv(gym.Env):
         self.action_assignments[self.action_mask.astype(bool)] = self.workload[self.action_mask.astype(bool), :4]
 
     def _get_obs(self):
-        assert self.action_mask.any()
+        # assert self.action_mask.any()
         self._update_available()
+
+        # print("Second: ", type(self.workload[:,5]))
+        # print("First: ",type(self.workload[:,0]))
+        # print("Bla Bla2")
+        # print("Third: ", type(self.workload[:,8]))
+        # print("Fourth: ", type(self.degradation_speed), type(self.time))
         obs_dict = dict({
                          # 'action_mask': self.action_mask,
                          # 'avail_actions': self.action_assignments, #*self.action_mask,
@@ -242,7 +294,7 @@ class MCEnv(gym.Env):
 
         self.speed = 1
         self.time = 0
-
+        # self.time = np.float32(self.time)
         workload = np.zeros((self.job_num, 9))
         # # -----added----- filling the rest of the workload with dummy jobs starved#
         # print(self.job_num)
@@ -263,6 +315,7 @@ class MCEnv(gym.Env):
         self.workload[:, 5][self.time + self.workload[:, 8]/self.speed > self.workload[:, 1]] = 1
         self.degradation_schedule = np.random.uniform(high=np.sum(workload[:, 2]))
         self.degradation_speed = np.around(loguniform.rvs(self.total_load, 1e0), decimals=2) #
+        self.degradation_speed = np.float32(self.degradation_schedule)
         self.action_mask = np.ones(self.job_num)
         self.action_assignments = np.zeros_like(self.workload[:, :4])
         self.action_assignments[self.action_mask.astype(bool)] = self.workload[self.action_mask.astype(bool), :4]
@@ -742,5 +795,36 @@ class MCOEnv(gym.Env):
     def final(self):
             if self._done():
                 print("Final Workload after done:",self.workload)
+<<<<<<< HEAD
 
 # print("hello")
+=======
+# #
+# env = MCEnv()
+#
+# observation=env.reset()
+# done = env._done()
+# done=False
+# state=0
+# total_reward=0
+# myspace = Tuple((Discrete(5), Box(low=0, high=np.inf, shape=(1,))))
+# while not done:
+# # for i in range(5):
+#    state=state+1
+#
+#    action = myspace.sample()
+#    print("Action: ", action)
+#    observation, reward, done, empty = env.step(action)
+#    total_reward=total_reward+ reward
+#    print("Observation:", env._get_obs())
+#
+#    if done:
+#
+#        #env.final()
+#        print("Total Reward: %d",total_reward)
+#        break
+#
+# print("Finished this Eposide after ", state, " States")
+# print("Total Reward: %d", total_reward)
+# print("hello")
+>>>>>>> 037f6e6d639ecc6c1723973e6533d47f8f6606b9
