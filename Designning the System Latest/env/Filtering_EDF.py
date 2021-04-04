@@ -78,6 +78,12 @@ def filtering_workload(num_jobs, total_load, lo_per, job_density, time):
     new_array=new_array[:,:4]
     # print(new_array)
     return new_array
-
+def compute_speed(workload):
+    my_Workload = workload[np.where(workload[:,3] == 1),:]
+    temp_workload = my_Workload[0]
+    # print(len(workload))
+    min_s =   np.round(np.sum(temp_workload[:,2]) / (np.max(temp_workload[:,1]) - np.min(temp_workload[:,0]) ),2)
+    print("Miniumum Speed affordable by this schedule: ")
+    return min_s
 # workload =  filtering_workload(10,0.5,.3,4,0)
 # print(workload)

@@ -52,8 +52,8 @@ class MCEnv(gym.Env):
         # print(self.job_num)
 
         workload_filtered= filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
-        workload[:workload_filtered.size//4, :4]=workload_filtered
-        workload[workload_filtered.size//4:, 6]=1
+        workload[:workload_filtered.size//4, :4]= workload_filtered
+        workload[workload_filtered.size//4:, 6]= 1
         # print("Final Filtered-Scheduble instance using EDF on 1-speed: ")
         # print(workload)
         #hence the remaingin jobs in the initial workload will be filled with zeros
@@ -70,7 +70,7 @@ class MCEnv(gym.Env):
             # 'avail_actions': Box(-np.inf, np.inf, shape=(self.job_num, 4)),
             # 'MCenv': Dict({
                'RDP_jobs': Box(low=-np.inf, high=np.inf, shape=(self.job_num, 3),dtype=np.float32),
-               'CRSEC_jobs': MultiBinary(self.job_num * 5),
+               'CRSEC_jobs': MultiBinary(self.job_num * 5,dtype=np.float32),
                 'RP_jobs': Box(low=-np.inf,high=np.inf, shape=(self.job_num, 1 ),dtype=np.float32),
                'Processor': Box(low=np.array([-np.inf, -np.inf]), high=np.array([1, np.inf]),dtype=np.float32),
             })
