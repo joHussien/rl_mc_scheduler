@@ -1,24 +1,16 @@
 import gym, ray
 #from env.job_gen_env import MCOEnv, MCEnv
-
-from env.job_gen_env_Preemption import MCEnv,MCVBEnv,MCOEnv
-
 from env.job_gen_env_filtered import MCEnv,MCVBEnv,MCOEnv
-
 
 import argparse
 import time
 
 from ray import tune
 # from ray.tune.logger import LoggerCallback
-import tune_sklearn
-import hpbandster 
-from ray.tune.suggest.bohb import TuneBOHB
+
 from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.agents.pg.pg import PGTrainer
 from ray.tune.suggest.bayesopt import BayesOptSearch
-
-from ray.rllib.agents.pg.pg import PGTrainer
 import ray.tune.suggest.bayesopt
 from ray.rllib.agents.sac.sac import SACTrainer
 from ray.rllib.agents.ppo.ppo import PPOTrainer
@@ -26,7 +18,6 @@ from ray.rllib.agents.ppo.appo import APPOTrainer
 from ray.rllib.agents.marwil.marwil import MARWILTrainer
 from ray.rllib.agents.marwil.bc import BCTrainer
 from ray.rllib.agents.dqn import ApexTrainer, DQNTrainer
-from ray.rllib.agents.ppo.ppo import PPOTrainer, DEFAULT_CONFIG
 from ray.tune.registry import register_env
 
 from gym.spaces import Box
@@ -172,30 +163,13 @@ def get_opt():
 
 #arguments =get_opt()
 if __name__ == "__main__":
-
-    ray.init(object_store_memory=10**9)
-    # ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
-
-    register_env("not_filtered_not_degraded_offline", lambda env_config: MCEnv())
-    hyper_parameters={"env": "not_filtered_not_degraded_offline", "num_workers": 5, "num_cpus_per_worker": 1,
-                              "num_gpus": 0 ,
-                                # "horizon": 1,"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
-                                # "replay_proportion": tune.uniform(0,1),"replay_buffer_num_slots":1
-                                # "gamma":tune.grid_search([0.1,0.5,0.9,1]),
-                                #  "prioritized_replay": True,
-                       #"timesteps_per_iteration":15000,
-                      }
-   # bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
-    tune.run(PPOTrainer, checkpoint_freq=200, stop={"training_iteration": 1000},  config=hyper_parameters)
-
     ray.init()
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
     register_env("filtered_degraded_offline", lambda env_config: MCEnv())
     hyper_parameters={"env": "filtered_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
                              "num_gpus": 0 , 
-                              "lambda": tune.uniform(0,1),
-				"sgd_minibatch_size":1024,
+                              "lambda": tune.uniform(0,1),"sgd_minibatch_size":tune.choice([128,512]),
                                 # "horizon": 1,"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
                                 # "replay_proportion": tune.uniform(0,1),"replay_buffer_num_slots":1
                                 # "gamma":tune.grid_search([0.1,0.5,0.9,1]),
@@ -203,13 +177,12 @@ if __name__ == "__main__":
                        #"timesteps_per_iteration":15000,
                       }
    # bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
-    algo = BayesOptSearch( metric="episode_reward_mean", mode="max")
-    #bohb = HyperBandForBOHB( time_attr="training_iteration",metric="episode_reward_mean",mode="max")
+    algo = TuneBOHB(max_concurrent=4, metric="episode_reward_mean", mode="max")
+   # bohb = HyperBandForBOHB( tim_attr="training_iteration",metric="episode_reward_mean",mode="max")
     tune.run(PPOTrainer, checkpoint_freq=50, stop={ 
                                                     #"episode_reward_mean":6,
-                                                    "training_iteration": 1500
-                                                                                },  config=hyper_parameters,search_alg=algo)
-
+                                                    "training_iteration": 500
+                                                                                },  config=hyper_parameters, scheduler=bohb,search_alg=algo)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 
                                                                                          #})
