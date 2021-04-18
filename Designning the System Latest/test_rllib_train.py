@@ -168,23 +168,24 @@ if __name__ == "__main__":
     ray.init()
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
-    register_env("filtered_degraded_offline", lambda env_config: MCEnv())
-    hyper_parameters={"env": "filtered_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
+    register_env("twenty_filtered_degraded_offline", lambda env_config: MCEnv())
+    hyper_parameters={"env": "twenty_filtered_degraded_offline", "num_workers": 14, "num_cpus_per_worker": 1,
                              "num_gpus": 0 , 
-                              "lambda": tune.uniform(0,1),
-				"sgd_minibatch_size":1024,
-                                # "horizon": 1,"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
+                              #"lambda": tune.uniform(0,1),
+				#"sgd_minibatch_size":1024,
+                                "horizon": 15,
+                                #"lr":tune.uniform(0,1),"gamma":tune.uniform(0,1),
                                 # "replay_proportion": tune.uniform(0,1),"replay_buffer_num_slots":1
-                                # "gamma":tune.grid_search([0.1,0.5,0.9,1]),
-                                # "prioritized_replay": True,
+                                 "gamma":0.9,
+                                "prioritized_replay": True,
                        #"timesteps_per_iteration":15000,
                       }
    # bayesopt = BayesOptSearch(metric="episode_reward_mean", mode="max")
     algo = BayesOptSearch( metric="episode_reward_mean", mode="max")
     #bohb = HyperBandForBOHB( time_attr="training_iteration",metric="episode_reward_mean",mode="max")
-    tune.run(PPOTrainer, checkpoint_freq=50, stop={ 
+    tune.run(ApexTrainer, checkpoint_freq=50, stop={ 
                                                     #"episode_reward_mean":6,
-                                                    "training_iteration": 1500
+                                                    "training_iteration": 600
                                                                                 },  config=hyper_parameters,search_alg=algo)
                                                                                          # "prioritized_replay":True, "timesteps_per_iteration": 500,
 

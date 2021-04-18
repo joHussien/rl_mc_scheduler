@@ -22,7 +22,7 @@ from gym.spaces.utils import flatten, flatten_space
 
 
 class MCEnv(gym.Env):
-    def __init__(self, env_config= {'job_num': 10, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
+    def __init__(self, env_config= {'job_num': 20, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
         #add here description of each parameter
         self.time = 0
         self.job_num = env_config['job_num']
