@@ -350,19 +350,19 @@ class MCVBEnv(gym.Env):
         # print("Current Workload: ", self.workload)
 
         obs_dict = dict({
-                         'action_mask': self.action_mask,
-                         'avail_actions': self.action_assignments,  # *self.action_mask,
-                         'MCenv': dict({
+                         # 'action_mask': self.action_mask,
+                         # 'avail_actions': self.action_assignments,  # *self.action_mask,
+                         # 'MCenv': dict({
                          'RDP_jobs': np.array(buffer[:, :3]),
                          'CRSE_jobs': np.array(buffer[:, 3:]).flatten(),
-                         'Processor': np.array([1, 0]).flatten()
-                                        })
+                         'Processor': np.array([self.speed, self.time]).flatten()
+                                        # })
                          })
 
         #return obs_dict
         #print("Hi",len(flatten(self.observation_space_dict, obs_dict)))
         #print(len(obs_dict))
-        return flatten(self.observation_space, obs_dict)
+        return flatten(self.observation_space_dict, obs_dict)
 
     def reset(self):
         self.time = 0
@@ -668,4 +668,26 @@ class MCOEnv(gym.Env):
 
 
 
+env = MCVBEnv()
 
+#observation=env.reset()
+#done = env._done()
+done=False
+state=0
+total_reward=0
+#while not done:
+for i in range(20):
+   state=state+1
+   action = np.random.randint(0, 10)
+   print("Action: ", action)
+   observation, reward, done, empty = env.step(action)
+   total_reward=total_reward+ reward
+   #print(observation)
+   if done:
+
+       #env.final()
+       print("Total Reward: %d",total_reward)
+       break
+
+print("Finished this Eposide after ", state, " States")
+print("Total Reward: %d", total_reward)
