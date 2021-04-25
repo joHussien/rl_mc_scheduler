@@ -157,9 +157,9 @@ if __name__ == "__main__":
     ray.init()
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
-    register_env("no_speed_2_offline", lambda env_config: MCEnv())
+    register_env("no_speed_offline", lambda env_config: MCEnv())
 
-    tune.run(ApexTrainer, checkpoint_freq=100, stop={"training_iteration": 500},  config={"env": "no_speed_2_offline", "num_workers": 14, "num_cpus_per_worker": 1,
+    tune.run(ApexTrainer, checkpoint_freq=100, stop={"training_iteration": 500},  config={"env": "no_speed_offline", "num_workers": 14, "num_cpus_per_worker": 1,
                               "num_gpus": 0, "horizon": 15, "gamma":1
                                                                                          #})
         #"model": {"custom_model": "pa_model_intent",
