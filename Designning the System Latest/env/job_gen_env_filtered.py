@@ -19,8 +19,8 @@ from gym.spaces import Box, MultiBinary, Discrete, Dict
 from env.job_generator import create_workload
 from scipy.stats import loguniform
 from gym.spaces.utils import flatten, flatten_space
-
-
+from env.Filtering_EDF import filtering_workload
+#speed is masked from the observation of the offline and the workload is filtered
 class MCEnv(gym.Env):
     def __init__(self, env_config= {'job_num': 10, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
         #add here description of each parameter
@@ -32,7 +32,15 @@ class MCEnv(gym.Env):
         self.speed = 1
 
         workload = np.zeros((self.job_num, 7))
-        workload[:, :4] = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
+        #filteration Par
+        workload_filtered = filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
+        workload[:workload_filtered.size // 4, :4] = workload_filtered
+        # --new dummy definition
+        workload[workload_filtered.size // 4:, [0, 2, 3]] = 0
+        workload[workload_filtered.size // 4:, 1] = np.max(workload_filtered[:, 1])
+        # --------
+        workload[workload_filtered.size // 4:, 6] = 1
+        # workload[:, :4] = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
         self.workload = np.abs(workload) #negative processing time
 
         self.action_space = Discrete(self.job_num)
@@ -155,7 +163,14 @@ class MCEnv(gym.Env):
         self.time = 0
 
         workload = np.zeros((self.job_num, 7))
-        workload[:, :4] = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
+        #filteration part and adding dummy jobs
+        workload_filtered = filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
+        workload[:workload_filtered.size // 4, :4] = workload_filtered
+        # --new dummy definition
+        workload[workload_filtered.size // 4:, [0, 2, 3]] = 0
+        workload[workload_filtered.size // 4:, 1] = np.max(workload_filtered[:, 1])
+        # --------
+        workload[workload_filtered.size // 4:, 6] = 1
         self.workload = np.abs(workload)  # negative processing time
         self.workload[:, 4][self.time >= self.workload[:, 0]] = 1
         self.workload[:, 5][self.time + self.workload[:, 2]/self.speed > self.workload[:, 1]] = 1
@@ -174,7 +189,7 @@ class MCEnv(gym.Env):
     def _done(self):
         return bool((self.workload[:, 5].astype(bool) | self.workload[:, 6].astype(bool)).all())
 
-
+#applied filteration to the varybing buffer and edited the definition of the dummy jobs
 class MCVBEnv(gym.Env):
     def __init__(self, env_config={'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4, 'buffer_length': 10}):
         #add here description of each parameter
@@ -186,9 +201,23 @@ class MCVBEnv(gym.Env):
         self.lo_per = np.random.uniform(low=0, high=1 - 2 / self.job_num)  # env_config['lo_per']
         self.job_density = np.random.randint(low=self.job_num*(1/4), high=self.job_num*(1/2))  # env_config['job_density']
         self.speed = 1
+        workload_raw = np.zeros((self.job_num, 7))
         workload = np.zeros((self.job_num, 7))
-        workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
-        workload[:, :4] = workload_raw[np.argsort(workload_raw[:, 1]-workload_raw[:, 2])]
+        #filteration part
+        workload_filtered = filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
+        workload_raw[:workload_filtered.size // 4, :4] = workload_filtered
+        # --new dummy definition
+        workload_raw[workload_filtered.size // 4:, [0, 2, 3]] = 0
+        workload_raw[workload_filtered.size // 4:, 1] = np.max(workload_filtered[:, 1])
+        # --------
+        workload_raw[workload_filtered.size // 4:, 6] = 1
+        # print("This is the filtered workload ", workload_raw)
+        #------
+        # workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
+        #ordereing them by laxity
+        # print()
+        # print(workload)
+        workload = workload_raw[np.argsort(workload_raw[:, 1]-workload_raw[:, 2])]
         self.workload = np.abs(workload)
         self.dummy_jobs = None
         if self.buffer_length > self.job_num:
@@ -197,18 +226,23 @@ class MCVBEnv(gym.Env):
             min_feat, max_feat = np.amin(self.workload[:, :3], axis=0), np.amax(self.workload[:, :3], axis=0)
             self.dummy_jobs[:, :3] = np.around(
                 np.random.uniform(size=(dummy_len, 3)) * (max_feat - min_feat) + min_feat, decimals=3)
+            #new definition of dummy jobs
+            self.dummy_jobs[:,[0,2,3]] = 0
+            self.dummy_jobs[:,1]= np.max(self.workload[:,1])
+            #------
             self.dummy_jobs[:, [5, 6]] = 1
 
+        # print("Dummy ",self.dummy_jobs)
         self.obs_idx = np.arange(min(self.buffer_length, self.job_num))
         self.action_space = Discrete(self.buffer_length)
         self.observation_space_dict = Dict({
-            'action_mask': Box(0, 1, shape=(self.buffer_length,)),
-            'avail_actions': Box(-10, 10, shape=(self.buffer_length, 2)),
-            'MCenv': Dict({
+            # 'action_mask': Box(0, 1, shape=(self.buffer_length,)),
+            # 'avail_actions': Box(-10, 10, shape=(self.buffer_length, 2)),
+            # 'MCenv': Dict({
             'RDP_jobs': Box(low=0, high=np.inf, shape=(self.buffer_length, 3)),
             'CRSE_jobs': MultiBinary(self.buffer_length*4),
             'Processor': Box(low=np.array([0., 0.]), high=np.array([1, np.inf])),
-            })
+            # })
         })
         self.observation_space = flatten_space(self.observation_space_dict)
         #print("Hola",(self.observation_space_dict))
@@ -230,10 +264,10 @@ class MCVBEnv(gym.Env):
         return [seed]
 
     def step(self, act_buffer):
-        if not self.action_mask[act_buffer]:
-           raise ValueError(
-               "Chosen action was not one of the non-zero action embeddings",
-               act_buffer, self.action_assignments, self.action_mask)
+        # if not self.action_mask[act_buffer]:
+        #    raise ValueError(
+        #        "Chosen action was not one of the non-zero action embeddings",
+        #        act_buffer, self.action_assignments, self.action_mask)
         done = self._done()
         reward = 0
         if act_buffer >= self.obs_idx.shape[0]:
@@ -337,9 +371,18 @@ class MCVBEnv(gym.Env):
         self.lo_per = np.random.uniform(low=0, high=1 - 2 / self.job_num)  # env_config['lo_per']
         self.job_density = np.random.randint(low=self.job_num*(1/4), high=self.job_num*(1/2))  # env_config['job_density']
         self.speed = 1
+        workload_raw = np.zeros((self.job_num, 7))
         workload = np.zeros((self.job_num, 7))
-        workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
-        workload[:, :4] = workload_raw[np.argsort(workload_raw[:, 1] - workload_raw[:, 2])]
+        workload_filtered = filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
+        workload_raw[:workload_filtered.size // 4, :4] = workload_filtered
+        #--new dummy definition
+        workload_raw[workload_filtered.size // 4:, [0,2,3]] = 0
+        workload_raw[workload_filtered.size // 4:, 1] = np.max(workload_filtered[:,1])
+        #--------
+        workload_raw[workload_filtered.size // 4:, 6] = 1
+        print("This is the filtered workload ",workload_raw)
+        # workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
+        workload = workload_raw[np.argsort(workload_raw[:, 1] - workload_raw[:, 2])]
         self.workload = np.abs(workload)
 
         self.dummy_jobs = None
@@ -349,6 +392,10 @@ class MCVBEnv(gym.Env):
             min_feat, max_feat = np.amin(self.workload[:, :3], axis=0), np.amax(self.workload[:, :3], axis=0)
             self.dummy_jobs[:, :3] = np.around(
                 np.random.uniform(size=(dummy_len, 3)) * (max_feat - min_feat) + min_feat, decimals=3)
+            # new definition of dummy jobs
+            self.dummy_jobs[:, [0, 2, 3]] = 0
+            self.dummy_jobs[:, 1] = np.max(self.workload[:, 1])
+            # ------
             self.dummy_jobs[:, [5, 6]] = 1
 
         self.obs_idx = np.arange(min(self.buffer_length, self.job_num))
@@ -621,3 +668,27 @@ class MCOEnv(gym.Env):
 
 
 
+env = MCVBEnv()
+
+observation=env.reset()
+done = env._done()
+done=False
+state=0
+total_reward=0
+while not done:
+#for i in range(20):
+   state=state+1
+   action = np.random.randint(0, 7)
+   print("Action: ", action)
+   observation, reward, done, empty = env.step(action)
+   total_reward=total_reward+ reward
+   #print(observation)
+   if done:
+
+       #env.final()
+       print("Total Reward: %d",total_reward)
+       break
+
+print("Finished this Eposide after ", state, " States")
+print("Total Reward: %d", total_reward)
+# # print("hello")
