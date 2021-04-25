@@ -667,27 +667,27 @@ class MCOEnv(gym.Env):
                 print("Final Workload after done:",self.workload)
 
 
-
-env = MCVBEnv()
-
-#observation=env.reset()
-#done = env._done()
-done=False
-state=0
-total_reward=0
-#while not done:
-for i in range(20):
-   state=state+1
-   action = np.random.randint(0, 10)
-   print("Action: ", action)
-   observation, reward, done, empty = env.step(action)
-   total_reward=total_reward+ reward
-   #print(observation)
-   if done:
-
-       #env.final()
-       print("Total Reward: %d",total_reward)
-       break
-
-print("Finished this Eposide after ", state, " States")
-print("Total Reward: %d", total_reward)
+#
+# env = MCVBEnv()
+#
+# #observation=env.reset()
+# #done = env._done()
+# done=False
+# state=0
+# total_reward=0
+# #while not done:
+# for i in range(20):
+#    state=state+1
+#    action = np.random.randint(0, 10)
+#    print("Action: ", action)
+#    observation, reward, done, empty = env.step(action)
+#    total_reward=total_reward+ reward
+#    #print(observation)
+#    if done:
+#
+#        #env.final()
+#        print("Total Reward: %d",total_reward)
+#        break
+#
+# print("Finished this Eposide after ", state, " States")
+# print("Total Reward: %d", total_reward)
