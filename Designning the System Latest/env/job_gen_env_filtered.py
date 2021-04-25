@@ -22,7 +22,7 @@ from gym.spaces.utils import flatten, flatten_space
 
 
 class MCEnv(gym.Env):
-    def __init__(self, env_config= {'job_num': 20, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
+    def __init__(self, env_config= {'job_num': 10, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
         #add here description of each parameter
         self.time = 0
         self.job_num = env_config['job_num']
@@ -90,14 +90,14 @@ class MCEnv(gym.Env):
         time = max(self.time, self.workload[action, 0])
 
         if time >= self.degradation_schedule:
-            # self.speed = self.degradation_speed
+            #self.speed = self.degradation_speed
             self.speed = 1
             time += self.workload[action, 2] / self.speed
         elif self.workload[action, 2] + time < self.degradation_schedule:
             time += self.workload[action, 2]
         else:
             time_in_norm = self.degradation_schedule-time
-            # self.speed = self.degradation_speed
+            #self.speed = self.degradation_speed
             self.speed = 1
             time_in_deg = (self.workload[action][2]-time_in_norm)/self.speed
             time += time_in_norm + time_in_deg
@@ -619,27 +619,5 @@ class MCOEnv(gym.Env):
             if self._done():
                 print("Final Workload after done:",self.workload)
 
-env = MCEnv()
 
-#observation=env.reset()
-#done = env._done()
-done=False
-state=0
-total_reward=0
-#while not done:
-for i in range(20):
-   state=state+1
-   action = np.random.randint(0, 10)
-   print("Action: ", action)
-   observation, reward, done, empty = env.step(action)
-   total_reward=total_reward+ reward
-   #print(observation)
-   if done:
-
-       #env.final()
-       print("Total Reward: %d",total_reward)
-       break
-
-print("Finished this Eposide after ", state, " States")
-print("Total Reward: %d", total_reward)
 

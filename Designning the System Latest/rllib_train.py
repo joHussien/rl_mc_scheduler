@@ -1,6 +1,6 @@
 import gym, ray
 #from env.job_gen_env import MCOEnv, MCEnv
-from env.job_gen_env_Preemption import MCEnv,MCVBEnv,MCOEnv
+from env.job_gen_env_filtered import MCEnv,MCVBEnv,MCOEnv
 
 import argparse
 import time
@@ -157,10 +157,10 @@ if __name__ == "__main__":
     ray.init()
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
-    register_env("test", lambda env_config: MCEnv())
+    register_env("no_speed_2_offline", lambda env_config: MCEnv())
 
-    tune.run(ApexTrainer, checkpoint_freq=50, stop={"training_iteration": 500},  config={"env": "test", "num_workers": 14, "num_cpus_per_worker": 1,
-                              "num_gpus": 1, "horizon": 15, "gamma":1
+    tune.run(ApexTrainer, checkpoint_freq=100, stop={"training_iteration": 500},  config={"env": "no_speed_2_offline", "num_workers": 14, "num_cpus_per_worker": 1,
+                              "num_gpus": 0, "horizon": 15, "gamma":1
                                                                                          #})
         #"model": {"custom_model": "pa_model_intent",
          #               "fcnet_hiddens": [256, 256, 256]},
