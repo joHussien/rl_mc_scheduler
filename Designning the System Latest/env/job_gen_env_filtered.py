@@ -422,7 +422,7 @@ class MCVBEnv(gym.Env):
 
 #added the filtering, the new dummy definition and finally the new param theta
 class MCOEnv(gym.Env):
-    def __init__(self, env_config= {'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4, 'buffer_length':5}):
+    def __init__(self, env_config= {'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4, 'buffer_length':10}):
         #add here description of each parameter
         self.seed()
         self.time = 0
@@ -561,12 +561,18 @@ class MCOEnv(gym.Env):
             # reward = -np.sum((self.workload[:, 5] - prev_workload[:, 5])*self.reward_weights)
             Hi_done = np.count_nonzero(self.workload[self.workload[:, 3].astype(bool), 6]==1)
             Hi_num = np.count_nonzero(self.workload[:, 3]==1)
+            if(Hi_num == 0):
+                exist = False
+            else :
+                exist = True
             # print("Number of jobs: ", Hi_num)
             # print("Hi Percentage completed: ", Hi_perc)
-            if done and ((Hi_done/Hi_num) == self.theta):
-                # print("I entered the condition",self.workload)
-                # exit
-                reward += np.sum(self.workload[:, 6])
+            #exist is to handle the case of I don't have Hi-critical jobs at all
+            if  done and exist:
+                if ((Hi_done/Hi_num) == self.theta):
+                    reward += np.sum(self.workload[:, 6])
+            elif done:
+                reward += np.sum(self.workload[:,6])
         obs = self._get_obs()
         done = self._done()
         return obs, reward, done, {}
