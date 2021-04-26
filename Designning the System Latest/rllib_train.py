@@ -157,9 +157,9 @@ if __name__ == "__main__":
     ray.init()
     ModelCatalog.register_custom_model("pa_model_intent", ParametricActionsModelY)
 
-    register_env("VB_newdummy", lambda env_config: MCVBEnv())
+    register_env("online_newdummy_thetaOne", lambda env_config: MCOEnv())
 
-    tune.run(ApexTrainer, checkpoint_freq=100, stop={"training_iteration": 500},  config={"env": "VB_newdummy", "num_workers": 14, "num_cpus_per_worker": 1,
+    tune.run(ApexTrainer, checkpoint_freq=100, stop={"training_iteration": 500},  config={"env": "online_newdummy_thetaOne", "num_workers": 14, "num_cpus_per_worker": 1,
                               "num_gpus": 0, "horizon": 15, "gamma":1
                                                                                          #})
         #"model": {"custom_model": "pa_model_intent",

@@ -16,10 +16,12 @@ import numpy as np
 import gym 
 from gym.utils import seeding
 from gym.spaces import Box, MultiBinary, Discrete, Dict
-from env.job_generator import create_workload
+from job_generator import create_workload
+# from env.job_generator import create_workload
 from scipy.stats import loguniform
 from gym.spaces.utils import flatten, flatten_space
-from env.Filtering_EDF import filtering_workload
+from Filtering_EDF import filtering_workload
+# from env.Filtering_EDF import filtering_workload
 #speed is masked from the observation of the offline and the workload is filtered
 class MCEnv(gym.Env):
     def __init__(self, env_config= {'job_num': 10, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
@@ -418,12 +420,15 @@ class MCVBEnv(gym.Env):
     #     if self._done():
     #         print("Final Workload after done:",self.workload)
 
-
+#added the filtering, the new dummy definition and finally the new param theta
 class MCOEnv(gym.Env):
-    def __init__(self, env_config= {'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4, 'buffer_length':10}):
+    def __init__(self, env_config= {'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4, 'buffer_length':5}):
         #add here description of each parameter
         self.seed()
         self.time = 0
+        #The new param to detect the percentage of Hi-critical jobs required to be executed
+        self.theta = 1
+        #--
         self.buffer_length = env_config['buffer_length']
         self.job_num = np.random.randint(low=3, high=2 * self.buffer_length)
         self.total_load = np.random.uniform(low=0.2, high=1)  # env_config['total_load']
@@ -431,25 +436,41 @@ class MCOEnv(gym.Env):
         self.job_density = np.random.randint(low=self.job_num*(1/4), high=self.job_num*(1/2))  # env_config['job_density']
         self.speed = 1
         workload = np.zeros((self.job_num, 7))
-        workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
-        workload[:, :4] = workload_raw[np.argsort(workload_raw[:, 1]-workload_raw[:, 2])]
+        #--------added
+        # # -----added----- filling the rest of the workload with dummy jobs starved#
+        workload_filtered= filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
+        workload[:workload_filtered.size//4, :4]=workload_filtered
+        # this line for lacity ordering
+        #workload[:, :4] = workload_filtered[np.argsort(workload_filtered[:, 1] - workload_filtered[:, 2])]
+        # --new dummy definition
+        workload[workload_filtered.size // 4:, [0, 2, 3]] = 0
+        workload[workload_filtered.size // 4:, 1] = np.max(workload_filtered[:, 1])
+        # --------
+        workload[workload_filtered.size//4:, 6]=1
+        # hence the remaingin jobs in the initial workload will be filled with zeros
+        # ----commented----#
+        #commented-----#
+        # workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
+        # workload[:, :4] = workload_raw[np.argsort(workload_raw[:, 1]-workload_raw[:, 2])]
+        #------------------#
         self.workload = np.abs(workload)
         self.action_space = Discrete(self.buffer_length+1)
         self.observation_space = Dict({
-            'action_mask': Box(0, 1, shape=(self.buffer_length+1,)),
-            'avail_actions': Box(-np.inf, np.inf, shape=(self.buffer_length+1, 4)),
-            'MCenv': Dict({
+            # 'action_mask': Box(0, 1, shape=(self.buffer_length+1,)),
+            # 'avail_actions': Box(-np.inf, np.inf, shape=(self.buffer_length+1, 4)),
+            # 'MCenv': Dict({
             'RDP_jobs': Box(low=0, high=np.inf, shape=(self.buffer_length, 3)),
             'CRSE_jobs': MultiBinary(self.buffer_length*4),
             'Processor': Box(low=np.array([0., 0.]), high=np.array([1, np.inf])),
             })
-        })
+        # })
         #self.observation_space= flatten_space(self.observation_space_dict)
         #self.workload[:, 4][self.time >= self.workload[:, 0]] = 1 (KF)
         #self.workload[:, 5][self.time + self.workload[:, 2]/self.speed > self.workload[:, 1]] = 1 (KF)#jobs that can't be done anyways
         #TODO: handle cases of multiple switches between degradation and normal execution
         self.degradation_schedule = np.random.uniform(high=np.sum(workload[:, 2]))
-        self.degradation_speed = np.around(loguniform.rvs(self.total_load, 1e0), decimals=2) #np.random.uniform(low=self.total_load)
+        # self.degradation_speed = np.around(loguniform.rvs(self.total_load, 1e0), decimals=2) #np.random.uniform(low=self.total_load)
+        self.degradation_speed = np.random.uniform(low=self.total_load)
         self._update_workload()
         self.obs_idx = np.arange(min(self.buffer_length, self.job_num))
         self.obs_idx = self.obs_idx[self.workload[self.obs_idx, 4].astype(bool)] #remove unreleased jobs (must be removed)
@@ -461,25 +482,26 @@ class MCOEnv(gym.Env):
         self.action_assignments = np.zeros((self.buffer_length + 1, 4))
         #self.action_assignments[self.action_mask.astype(bool)] = self.workload[self.action_mask.astype(bool), :4]
         self._update_available()
+
         #self.action_assignments = np.zeros() np.concatenate([np.sin(thetas), np.cos(thetas)], axis=-1)
         # #----#
         # print(self.workload)
         # #----#
 
-
+        # print(self.workload)
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
     def step(self, act):
         done = self._done()
-        if not self.action_mask[act]:
-
-             #print("Chosen action was not one of the non-zero action embeddings")
-             raise ValueError(
-            "Chosen action was not one of the non-zero action embeddings",
-                  act, self.action_assignments, self.action_mask, )
-             #return self._get_obs(), 0, done, {}
+        # if not self.action_mask[act]:
+        #
+        #      #print("Chosen action was not one of the non-zero action embeddings")
+        #      raise ValueError(
+        #     "Chosen action was not one of the non-zero action embeddings",
+        #           act, self.action_assignments, self.action_mask, )
+        #      #return self._get_obs(), 0, done, {}
         reward = 0
         # if not self.action_mask.any():
         #     if done and self.workload[self.workload[:, 3].astype(bool), 6].all():
@@ -518,13 +540,15 @@ class MCOEnv(gym.Env):
         time = max(self.time, self.workload[action, 0])
 
         if time >= self.degradation_schedule:
-            self.speed = self.degradation_speed
+            # self.speed = self.degradation_speed
+            self.speed = 1
             time += self.workload[action, 2] / self.speed
         elif self.workload[action, 2] + time < self.degradation_schedule:
             time += self.workload[action, 2]
         else:
             time_in_norm = self.degradation_schedule-time
-            self.speed = self.degradation_speed
+            # self.speed = self.degradation_speed
+            self.speed = 1
             time_in_deg = (self.workload[action][2]-time_in_norm)/self.speed
             time += time_in_norm + time_in_deg
         # double check, as in case of degradation, time will not increment properly which might lead to the
@@ -535,8 +559,13 @@ class MCOEnv(gym.Env):
             self._update_workload()
             done = self._done()
             # reward = -np.sum((self.workload[:, 5] - prev_workload[:, 5])*self.reward_weights)
-
-            if done and self.workload[self.workload[:, 3].astype(bool), 6].all():
+            Hi_done = np.count_nonzero(self.workload[self.workload[:, 3].astype(bool), 6]==1)
+            Hi_num = np.count_nonzero(self.workload[:, 3]==1)
+            # print("Number of jobs: ", Hi_num)
+            # print("Hi Percentage completed: ", Hi_perc)
+            if done and ((Hi_done/Hi_num) == self.theta):
+                # print("I entered the condition",self.workload)
+                # exit
                 reward += np.sum(self.workload[:, 6])
         obs = self._get_obs()
         done = self._done()
@@ -608,6 +637,10 @@ class MCOEnv(gym.Env):
                 np.random.uniform(size=(dummy_len, 3)) * (max_feat - min_feat) + min_feat, decimals=3)
             # self.dummy_jobs[:, :4] = create_workload(self.buffer_length-self.obs_idx.shape[0], self.total_load,self.lo_per, self.job_density)
             self.dummy_jobs[:, [5, 6]] = 1
+            # new definition of dummy jobs
+            self.dummy_jobs[:, [0, 2, 3]] = 0
+            self.dummy_jobs[:, 1] = np.max(self.workload[:, 1])
+            # ------
             #TODO(): does buffer ever change in this scope
             buffer = np.concatenate([buffer, self.dummy_jobs], axis=0)
         # print("Current time step and speed: ", self.time, self.speed)
@@ -618,14 +651,14 @@ class MCOEnv(gym.Env):
         # temp=np.concatenate([self.action_assignments[:self.buffer_length+1],self.action_assignments[self.obs_idx],
         #                      self.action_assignments[self.buffer_length]],axis=0)
         obs_dict = dict({
-                     'action_mask': self.action_mask,
-                     'avail_actions': self.action_assignments[:self.buffer_length+1],  # *self.action_mask,
-                     'MCenv': dict({
+                     # 'action_mask': self.action_mask,
+                     # 'avail_actions': self.action_assignments[:self.buffer_length+1],  # *self.action_mask,
+                     # 'MCenv': dict({
                      'RDP_jobs': np.array(buffer[:, :3]),
                      'CRSE_jobs': np.array(buffer[:, 3:]).flatten(),
                      'Processor': np.array([self.speed, self.time]).flatten()
                                     })
-                     })
+                     # })
         # #---#
         # print("Cureent Map, ", self.obs_idx)
         # print("Action_masking ", self.action_mask)
@@ -642,15 +675,26 @@ class MCOEnv(gym.Env):
         self.job_density = np.random.randint(low=self.job_num*(1/4), high=self.job_num*(1/2))  # env_config['job_density']
         self.speed = 1
         workload = np.zeros((self.job_num, 7))
-        workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
-        workload[:, :4] = workload_raw[np.argsort(workload_raw[:, 1] - workload_raw[:, 2])]
+        # --------added
+        # # -----added----- filling the rest of the workload with dummy jobs starved#
+        workload_filtered = filtering_workload(self.job_num, self.total_load, self.lo_per, self.job_density, self.time)
+        workload[:workload_filtered.size // 4, :4] = workload_filtered
+        #this line for lacity ordering
+        # workload[:, :4] = workload_filtered[np.argsort(workload_filtered[:, 1] - workload_filtered[:, 2])]
+        workload[workload_filtered.size // 4:, 6] = 1
+        # hence the remaingin jobs in the initial workload will be filled with zeros
+        # ----commented----#
+        # commented-----#
+        # workload_raw = create_workload(self.job_num, self.total_load, self.lo_per, self.job_density)
+        # workload[:, :4] = workload_raw[np.argsort(workload_raw[:, 1]-workload_raw[:, 2])]
+        # ------------------#
         self.workload = np.abs(workload)
         #self.workload[:, 4][self.time >= self.workload[:, 0]] = 1
         #self.workload[:, 5][self.time + self.workload[:, 2] / self.speed > self.workload[:, 1]] = 1  # jobs that can't be done anyways
         # TODO: handle cases of multiple switches between degradation and normal execution
         self.degradation_schedule = np.random.uniform(high=np.sum(workload[:, 2]))
-        self.degradation_speed = np.around(loguniform.rvs(self.total_load, 1e0),
-                                           decimals=2)  # np.random.uniform(low=self.total_load)
+        # self.degradation_speed = np.around(loguniform.rvs(self.total_load, 1e0), decimals=2)  # np.random.uniform(low=self.total_load)
+        self.degradation_speed = np.random.uniform(low=self.total_load)
         self._update_workload()
         self.obs_idx = np.arange(min(self.buffer_length, self.job_num))
         self.obs_idx = self.obs_idx[
@@ -667,20 +711,20 @@ class MCOEnv(gym.Env):
     def final(self):
             if self._done():
                 print("Final Workload after done:",self.workload)
-
+#
 
 #
-# env = MCVBEnv()
+# env = MCOEnv()
 #
 # #observation=env.reset()
 # #done = env._done()
 # done=False
 # state=0
 # total_reward=0
-# #while not done:
-# for i in range(20):
+# # while not done:
+# for i in range(50):
 #    state=state+1
-#    action = np.random.randint(0, 10)
+#    action = np.random.randint(0, 5)
 #    print("Action: ", action)
 #    observation, reward, done, empty = env.step(action)
 #    total_reward=total_reward+ reward
