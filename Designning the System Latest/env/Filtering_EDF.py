@@ -11,7 +11,7 @@
 # 3. Shcedule this instnace using the agent assuming the speed to be one
 # 4. Compare the performance and decide if any speedup needed
 import numpy as np
-from job_generator import create_workload
+from env.job_generator import create_workload
 
 # from env.job_generator import create_workload
 #important note here about this function the parameter time has no use, I assume internally that the first time step is 0 as there will be a

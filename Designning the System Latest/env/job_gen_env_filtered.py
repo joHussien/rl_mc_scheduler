@@ -16,12 +16,12 @@ import numpy as np
 import gym 
 from gym.utils import seeding
 from gym.spaces import Box, MultiBinary, Discrete, Dict
-from job_generator import create_workload
-# from env.job_generator import create_workload
+#from job_generator import create_workload
+from env.job_generator import create_workload
 from scipy.stats import loguniform
 from gym.spaces.utils import flatten, flatten_space
-from Filtering_EDF import filtering_workload
-# from env.Filtering_EDF import filtering_workload
+#from Filtering_EDF import filtering_workload
+from env.Filtering_EDF import filtering_workload
 #speed is masked from the observation of the offline and the workload is filtered
 class MCEnv(gym.Env):
     def __init__(self, env_config= {'job_num': 10, 'total_load': 0.4, 'lo_per': 0.3, 'job_density': 4}):
