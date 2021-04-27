@@ -30,14 +30,16 @@ policy = agent.workers.local_worker().get_policy()
 #env = gym.vector.make('MC-v0', num_envs=10, asynchronous=False)
 #obs = env.reset()
 accum = []
-HC_jobs_completed = np.zeros((100, 10))
-total_jobs_withHC = np.zeros((100, 10))
-print("DSpeed ",env.degradation_speed)
-print("My theta ",env.theta)
+HC_jobs_completed = np.zeros((10000, 10))
+total_jobs_withHC = np.zeros((10000, 10))
+#print("DSpeed ",env.degradation_speed)
+#print("My theta ",env.theta)
+theta_vals=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 for i in range(10):
     deg_speed = 0.1*(i+1)
-    theta = 0.1*(i+1)
-    for j in range(100):
+    theta = theta_vals[i]
+    print("Theta ",theta)
+    for j in range(10000):
         obs = env.reset()
         #print(obs)
         #print(obs)
@@ -46,6 +48,8 @@ for i in range(10):
         env.degradation_speed = 1
         env.theta = theta
         total = 0
+        done=False
+        #while(not done):
         for m in range(10):
             action = policy.compute_actions([obs])#(env)
             #print(env.time)
@@ -62,7 +66,7 @@ def plot(x,y):
 
     thet=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
     # axi=[10,20,30,40,50,60,70,80,90,100]
-    axi=list(range(0,100))
+    #axi=list(range(0,100))
     # plt.plot(degradation, axi, 'white')
     # plt.plot(degradation, x, 'red', label='HC_jobs_completed %')
 
@@ -76,11 +80,12 @@ def plot(x,y):
     plt.show()
 # print(np.mean(HC_jobs_completed, axis=0), np.mean(total_jobs_withHC, axis=0))
 # HC_jobs_completed=10*np.array((np.mean(HC_jobs_completed, axis=0)))
-print(total_jobs_withHC)
-print()
-print(np.mean(total_jobs_withHC, axis=0))
+#print(total_jobs_withHC)
+#print()
+#print(np.mean(total_jobs_withHC, axis=0))
 total_jobs_withHC=100*np.array((np.mean(total_jobs_withHC,axis=0)))
-print("HI ",HC_jobs_completed)
+print("Tot2 ",total_jobs_withHC)
+#print("HI ",HC_jobs_completed)
 HC_jobs_completed = 100*np.array((np.mean(HC_jobs_completed,axis=0)))
 print("Hi2 ",HC_jobs_completed)
 plot(HC_jobs_completed, total_jobs_withHC)

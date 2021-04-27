@@ -569,7 +569,7 @@ class MCOEnv(gym.Env):
             # print("Number of jobs: ", Hi_num)
             # print("Hi Percentage completed: ", Hi_perc)
             #exist is to handle the case of I don't have Hi-critical jobs at all
-            print("This is my theta new: ",self.theta)
+            #print("This is my theta new: ",self.theta)
             if  done and exist:
                 if ((Hi_done/Hi_num) == self.theta):
                     reward += np.sum(self.workload[:, 6])
@@ -711,7 +711,7 @@ class MCOEnv(gym.Env):
         self.action_mask = np.zeros(self.buffer_length + 1)
         self.action_mask[self.buffer_length] = 1
         self.action_assignments = np.zeros((self.buffer_length + 1, 4))
-        print("This si the used theta: ",self.theta)
+        #print("This si the used theta: ",self.theta)
         self._update_available()
         return self._get_obs()
 
