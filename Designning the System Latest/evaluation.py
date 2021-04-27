@@ -32,16 +32,18 @@ policy = agent.workers.local_worker().get_policy()
 accum = []
 HC_jobs_completed = np.zeros((100, 10))
 total_jobs_withHC = np.zeros((100, 10))
-
+print("DSpeed ",env.degradation_speed)
+print("My theta ",env.theta)
 for i in range(10):
-    #deg_speed = 0.1*(i+1)
+    deg_speed = 0.1*(i+1)
     theta = 0.1*(i+1)
     for j in range(100):
         obs = env.reset()
         #print(obs)
+        #print(obs)
         #print("Obse was printed above: \n")
-        #env.degradation_schedule = 0
-        #env.degradation_speed = 1
+        env.degradation_schedule = 0
+        env.degradation_speed = 1
         env.theta = theta
         total = 0
         for m in range(10):
