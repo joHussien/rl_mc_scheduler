@@ -710,7 +710,7 @@ class MCOEnv(gym.Env):
         self.action_mask = np.zeros(self.buffer_length + 1)
         self.action_mask[self.buffer_length] = 1
         self.action_assignments = np.zeros((self.buffer_length + 1, 4))
-
+        print("This si the used theta: ",self.theta)
         self._update_available()
         return self._get_obs()
 
