@@ -9,19 +9,20 @@ import numpy as np
 
 register(
     id='MC-v0',
-    entry_point='env.job_gen_env:MCOEnv',
+    entry_point='env.job_gen_env:MCEnv',
     max_episode_steps=20,
 
 )
 #checkpoint_path = 'APEX/APEX_my_env_0_2020-07-08_20-02-02lxf9cfz8/checkpoint_100/checkpoint-100'
 #checkpoint_path ='/home/ml2/ray_results/APEX/APEX_OfflineParametricAction_env_0_2020-08-12_19-08-178l0hppoa/checkpoint_100/checkpoint-100'
 
-checkpoint_path=''
+checkpoint_path='/home/youssefhussien/ray_results/APEX_2021-04-26_19-03-05/APEX_online_newdummy_thetaOne_07f35_00000_0_2021-04-26_19-03-05/checkpoint_400/checkpoint-400'
+checkpoint_path = '/home/youssefhussien/ray_results/APEX_2021-04-25_19-02-11/APEX_no_speed_offline_bd828_00000_0_2021-04-25_19-02-11/checkpoint_400/checkpoint-400'
 ray.init()
-env = MCOEnv()
+env = MCEnv()
 #gym.make('MC-v0')
 register_env("Online_Theta_evaluation", lambda env_config: env)
-agent = ApexTrainer(config={"env": "Online_Theta_evaluation", "num_workers": 2, "num_gpus": 0})
+agent = ApexTrainer(config={"env": "Online_Theta_evaluation", "num_workers": 8, "num_gpus": 0})
 
 agent.restore(checkpoint_path)
 policy = agent.workers.local_worker().get_policy()
@@ -32,21 +33,21 @@ HC_jobs_completed = np.zeros((100, 10))
 total_jobs_withHC = np.zeros((100, 10))
 
 for i in range(10):
-    deg_speed = 0.1*(i+1)
+    #deg_speed = 0.1*(i+1)
     theta = 0.1*(i+1)
     for j in range(100):
         obs = env.reset()
-        print(obs)
-        print("Obse was printed above: \n")
-        env.degradation_schedule = 0
-        env.degradation_speed = deg_speed
-        env.theta = theta
+        #print(obs)
+        #print("Obse was printed above: \n")
+        #env.degradation_schedule = 0
+        #env.degradation_speed = 1
+        #env.theta = theta
         total = 0
         for m in range(10):
             action = policy.compute_actions([obs])#(env)
             #print(env.time)
             obs, reward, done, empty = env.step(action[0][0])
-            print("m : ",m,"action: ",action,"\n",obs)
+            #print("m : ",m,"action: ",action,"\n",obs)
             total += reward
             if done:
                 HC_jobs_completed[j, i] = env.workload[env.workload[:, 3].astype(bool), 6].astype(bool).all()
@@ -68,7 +69,7 @@ def plot(x,y):
     plt.xlabel("Number of Trial")
     plt.title("Filterd offline First Test")
     plt.legend(title="Checkpoint 350")
-    plt.savefig("Inshallah.png")
+    plt.savefig("new_ev.png")
     plt.show()
 # print(np.mean(HC_jobs_completed, axis=0), np.mean(total_jobs_withHC, axis=0))
 # HC_jobs_completed=10*np.array((np.mean(HC_jobs_completed, axis=0)))

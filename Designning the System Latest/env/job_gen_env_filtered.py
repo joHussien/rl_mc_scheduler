@@ -489,6 +489,7 @@ class MCOEnv(gym.Env):
         # #----#
 
         # print(self.workload)
+        print("This is the Theta: ",self.theta)
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -680,6 +681,7 @@ class MCOEnv(gym.Env):
         self.lo_per = np.random.uniform(low=0, high=1 - 2 / self.job_num)  # env_config['lo_per']
         self.job_density = np.random.randint(low=self.job_num*(1/4), high=self.job_num*(1/2))  # env_config['job_density']
         self.speed = 1
+        self.theta = 1
         workload = np.zeros((self.job_num, 7))
         # --------added
         # # -----added----- filling the rest of the workload with dummy jobs starved#
