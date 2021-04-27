@@ -9,17 +9,18 @@ import numpy as np
 
 register(
     id='MC-v0',
-    entry_point='env.job_gen_env:MCEnv',
+    entry_point='env.job_gen_env:MCOEnv',
     max_episode_steps=20,
 
 )
 #checkpoint_path = 'APEX/APEX_my_env_0_2020-07-08_20-02-02lxf9cfz8/checkpoint_100/checkpoint-100'
 #checkpoint_path ='/home/ml2/ray_results/APEX/APEX_OfflineParametricAction_env_0_2020-08-12_19-08-178l0hppoa/checkpoint_100/checkpoint-100'
 
-checkpoint_path='/home/youssefhussien/ray_results/APEX_2021-04-26_19-03-05/APEX_online_newdummy_thetaOne_07f35_00000_0_2021-04-26_19-03-05/checkpoint_400/checkpoint-400'
-checkpoint_path = '/home/youssefhussien/ray_results/APEX_2021-04-25_19-02-11/APEX_no_speed_offline_bd828_00000_0_2021-04-25_19-02-11/checkpoint_400/checkpoint-400'
+checkpoint_path='/home/youssefhussien/ray_results/APEX_2021-04-26_19-03-05/APEX_online_newdummy_thetaOne_07f35_00000_0_2021-04-26_19-03-05/checkpoint_300/checkpoint-300'
+#checkpoint_path = '/home/youssefhussien/ray_results/APEX_2021-04-25_19-02-11/APEX_no_speed_offline_bd828_00000_0_2021-04-25_19-02-11/checkpoint_400/checkpoint-400'
+#checkpoint_path='/home/youssefhussien/ray_results/APEX_2021-04-26_02-08-53/APEX_VB_newdummy_5997f_00000_0_2021-04-26_02-08-53/checkpoint_400/checkpoint-400'
 ray.init()
-env = MCEnv()
+env = MCOEnv()
 #gym.make('MC-v0')
 register_env("Online_Theta_evaluation", lambda env_config: env)
 agent = ApexTrainer(config={"env": "Online_Theta_evaluation", "num_workers": 8, "num_gpus": 0})
@@ -41,7 +42,7 @@ for i in range(10):
         #print("Obse was printed above: \n")
         #env.degradation_schedule = 0
         #env.degradation_speed = 1
-        #env.theta = theta
+        env.theta = theta
         total = 0
         for m in range(10):
             action = policy.compute_actions([obs])#(env)

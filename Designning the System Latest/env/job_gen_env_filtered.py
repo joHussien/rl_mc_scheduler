@@ -455,7 +455,7 @@ class MCOEnv(gym.Env):
         #------------------#
         self.workload = np.abs(workload)
         self.action_space = Discrete(self.buffer_length+1)
-        self.observation_space = Dict({
+        self.observation_space_dict = Dict({
             # 'action_mask': Box(0, 1, shape=(self.buffer_length+1,)),
             # 'avail_actions': Box(-np.inf, np.inf, shape=(self.buffer_length+1, 4)),
             # 'MCenv': Dict({
@@ -464,7 +464,7 @@ class MCOEnv(gym.Env):
             'Processor': Box(low=np.array([0., 0.]), high=np.array([1, np.inf])),
             })
         # })
-        #self.observation_space= flatten_space(self.observation_space_dict)
+        self.observation_space= flatten_space(self.observation_space_dict)
         #self.workload[:, 4][self.time >= self.workload[:, 0]] = 1 (KF)
         #self.workload[:, 5][self.time + self.workload[:, 2]/self.speed > self.workload[:, 1]] = 1 (KF)#jobs that can't be done anyways
         #TODO: handle cases of multiple switches between degradation and normal execution
@@ -671,8 +671,8 @@ class MCOEnv(gym.Env):
         # print("Action_masking ", self.action_mask)
         # print("T: ",self.time,"S: ", self.speed)
         # #---#
-        #return flatten(self.observation_space_dict,obs_dict)
-        return obs_dict
+        return flatten(self.observation_space_dict,obs_dict)
+        #return obs_dict
 
     def reset(self):
         self.time = 0
